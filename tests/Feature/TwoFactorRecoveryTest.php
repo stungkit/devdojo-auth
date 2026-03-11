@@ -3,7 +3,9 @@
 use App\Models\User;
 use Devdojo\Auth\Actions\TwoFactorAuth\DisableTwoFactorAuthentication;
 use Devdojo\Auth\Actions\TwoFactorAuth\GenerateNewRecoveryCodes;
+use Devdojo\Auth\Events\TwoFactorAuthenticationDisabled;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Session;
 
 beforeEach(function () {
@@ -16,7 +18,7 @@ beforeEach(function () {
 // ===========================================
 
 it('generates recovery codes as a collection', function () {
-    $user = createUser(['password' => \Hash::make('password123')]);
+    $user = createUser(['password' => Hash::make('password123')]);
     $generator = new GenerateNewRecoveryCodes;
 
     $codes = $generator($user);
@@ -25,7 +27,7 @@ it('generates recovery codes as a collection', function () {
 });
 
 it('generates exactly 8 recovery codes', function () {
-    $user = createUser(['password' => \Hash::make('password123')]);
+    $user = createUser(['password' => Hash::make('password123')]);
     $generator = new GenerateNewRecoveryCodes;
 
     $codes = $generator($user);
@@ -34,7 +36,7 @@ it('generates exactly 8 recovery codes', function () {
 });
 
 it('generates recovery codes in correct format', function () {
-    $user = createUser(['password' => \Hash::make('password123')]);
+    $user = createUser(['password' => Hash::make('password123')]);
     $generator = new GenerateNewRecoveryCodes;
 
     $codes = $generator($user);
@@ -46,7 +48,7 @@ it('generates recovery codes in correct format', function () {
 });
 
 it('generates unique recovery codes each time', function () {
-    $user = createUser(['password' => \Hash::make('password123')]);
+    $user = createUser(['password' => Hash::make('password123')]);
     $generator = new GenerateNewRecoveryCodes;
 
     $codes1 = $generator($user);
@@ -57,7 +59,7 @@ it('generates unique recovery codes each time', function () {
 });
 
 it('generates codes with no duplicates within the set', function () {
-    $user = createUser(['password' => \Hash::make('password123')]);
+    $user = createUser(['password' => Hash::make('password123')]);
     $generator = new GenerateNewRecoveryCodes;
 
     $codes = $generator($user);
@@ -71,7 +73,7 @@ it('generates codes with no duplicates within the set', function () {
 
 it('stores recovery codes encrypted in database', function () {
     $generator = new GenerateNewRecoveryCodes;
-    $user = createUser(['password' => \Hash::make('password123')]);
+    $user = createUser(['password' => Hash::make('password123')]);
 
     // Simulate what the enable() method does
     $codes = $generator($user);
@@ -91,7 +93,7 @@ it('stores recovery codes encrypted in database', function () {
 
 it('clears recovery codes when disabling 2FA', function () {
     $user = createUser([
-        'password' => \Hash::make('password123'),
+        'password' => Hash::make('password123'),
         'two_factor_secret' => encrypt('testsecret'),
         'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
         'two_factor_confirmed_at' => now(),
@@ -114,7 +116,7 @@ it('clears recovery codes when disabling 2FA', function () {
 it('regenerates new recovery codes', function () {
     $generator = new GenerateNewRecoveryCodes;
     $user = createUser([
-        'password' => \Hash::make('password123'),
+        'password' => Hash::make('password123'),
         'two_factor_secret' => encrypt('testsecret'),
         'two_factor_recovery_codes' => encrypt(json_encode(['old-code-1', 'old-code-2'])),
         'two_factor_confirmed_at' => now(),
@@ -139,7 +141,7 @@ it('invalidates old recovery codes after regeneration', function () {
     $generator = new GenerateNewRecoveryCodes;
     $oldCode = 'abcdefghij-klmnopqrst';
     $user = createUser([
-        'password' => \Hash::make('password123'),
+        'password' => Hash::make('password123'),
         'two_factor_secret' => encrypt('testsecret'),
         'two_factor_recovery_codes' => encrypt(json_encode([$oldCode])),
         'two_factor_confirmed_at' => now(),
@@ -164,7 +166,7 @@ it('invalidates old recovery codes after regeneration', function () {
 it('allows login with valid recovery code', function () {
     $recoveryCode = 'validcode1-validcode2';
     $user = createUser([
-        'password' => \Hash::make('password123'),
+        'password' => Hash::make('password123'),
         'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'),
         'two_factor_recovery_codes' => encrypt(json_encode([$recoveryCode, 'another-code'])),
         'two_factor_confirmed_at' => now(),
@@ -183,7 +185,7 @@ it('allows login with valid recovery code', function () {
 
 it('rejects login with invalid recovery code', function () {
     $user = createUser([
-        'password' => \Hash::make('password123'),
+        'password' => Hash::make('password123'),
         'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'),
         'two_factor_recovery_codes' => encrypt(json_encode(['valid-code-here'])),
         'two_factor_confirmed_at' => now(),
@@ -200,7 +202,7 @@ it('rejects login with invalid recovery code', function () {
 
 it('rejects login with empty recovery code', function () {
     $user = createUser([
-        'password' => \Hash::make('password123'),
+        'password' => Hash::make('password123'),
         'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'),
         'two_factor_recovery_codes' => encrypt(json_encode(['valid-code-here'])),
         'two_factor_confirmed_at' => now(),
@@ -220,10 +222,10 @@ it('rejects login with empty recovery code', function () {
 // ===========================================
 
 it('dispatches event when disabling 2FA', function () {
-    \Illuminate\Support\Facades\Event::fake();
+    Event::fake();
 
     $user = createUser([
-        'password' => \Hash::make('password123'),
+        'password' => Hash::make('password123'),
         'two_factor_secret' => encrypt('testsecret'),
         'two_factor_recovery_codes' => encrypt(json_encode(['code1'])),
         'two_factor_confirmed_at' => now(),
@@ -232,16 +234,16 @@ it('dispatches event when disabling 2FA', function () {
     $disable = new DisableTwoFactorAuthentication;
     $disable($user);
 
-    \Illuminate\Support\Facades\Event::assertDispatched(
-        \Devdojo\Auth\Events\TwoFactorAuthenticationDisabled::class
+    Event::assertDispatched(
+        TwoFactorAuthenticationDisabled::class
     );
 });
 
 it('does not dispatch event when 2FA is not enabled', function () {
-    \Illuminate\Support\Facades\Event::fake();
+    Event::fake();
 
     $user = createUser([
-        'password' => \Hash::make('password123'),
+        'password' => Hash::make('password123'),
         'two_factor_secret' => null,
         'two_factor_recovery_codes' => null,
         'two_factor_confirmed_at' => null,
@@ -250,8 +252,8 @@ it('does not dispatch event when 2FA is not enabled', function () {
     $disable = new DisableTwoFactorAuthentication;
     $disable($user);
 
-    \Illuminate\Support\Facades\Event::assertNotDispatched(
-        \Devdojo\Auth\Events\TwoFactorAuthenticationDisabled::class
+    Event::assertNotDispatched(
+        TwoFactorAuthenticationDisabled::class
     );
 });
 
@@ -261,7 +263,7 @@ it('does not dispatch event when 2FA is not enabled', function () {
 
 it('can set up 2FA with recovery codes', function () {
     $generator = new GenerateNewRecoveryCodes;
-    $user = createUser(['password' => \Hash::make('password123')]);
+    $user = createUser(['password' => Hash::make('password123')]);
 
     // Simulate the enable and confirm flow
     $codes = $generator($user);
@@ -282,7 +284,7 @@ it('can set up 2FA with recovery codes', function () {
 
 it('can switch between auth code and recovery code modes', function () {
     $user = createUser([
-        'password' => \Hash::make('password123'),
+        'password' => Hash::make('password123'),
         'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'),
         'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
         'two_factor_confirmed_at' => now(),
@@ -299,7 +301,7 @@ it('can switch between auth code and recovery code modes', function () {
 });
 
 it('can cancel 2FA setup before confirmation', function () {
-    $user = createUser(['password' => \Hash::make('password123')]);
+    $user = createUser(['password' => Hash::make('password123')]);
 
     // Simulate enable
     $user->forceFill([
@@ -320,7 +322,7 @@ it('can cancel 2FA setup before confirmation', function () {
 
 it('can disable 2FA after confirmation using action', function () {
     $user = createUser([
-        'password' => \Hash::make('password123'),
+        'password' => Hash::make('password123'),
         'two_factor_secret' => encrypt('testsecret'),
         'two_factor_recovery_codes' => encrypt(json_encode(['code1'])),
         'two_factor_confirmed_at' => now(),
@@ -342,7 +344,7 @@ it('can disable 2FA after confirmation using action', function () {
 
 it('recovery codes are stored encrypted not in plaintext', function () {
     $generator = new GenerateNewRecoveryCodes;
-    $user = createUser(['password' => \Hash::make('password123')]);
+    $user = createUser(['password' => Hash::make('password123')]);
 
     $codes = $generator($user);
     $user->forceFill([
@@ -359,8 +361,8 @@ it('recovery codes are stored encrypted not in plaintext', function () {
 it('multiple users have unique recovery codes', function () {
     $generator = new GenerateNewRecoveryCodes;
 
-    $user1 = createUser(['email' => 'user1@test.com', 'password' => \Hash::make('password123')]);
-    $user2 = createUser(['email' => 'user2@test.com', 'password' => \Hash::make('password123')]);
+    $user1 = createUser(['email' => 'user1@test.com', 'password' => Hash::make('password123')]);
+    $user2 = createUser(['email' => 'user2@test.com', 'password' => Hash::make('password123')]);
 
     $codes1 = $generator($user1);
     $codes2 = $generator($user2);

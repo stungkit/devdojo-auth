@@ -2,10 +2,13 @@
 
 namespace Devdojo\Auth\Models;
 
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use Devdojo\Auth\Traits\HasSocialProviders;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use PragmaRX\Google2FA\Google2FA;
 
 /**
@@ -14,8 +17,8 @@ use PragmaRX\Google2FA\Google2FA;
  * @property string|null $email
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
- * @property \Illuminate\Support\Carbon|null $two_factor_confirmed_at
- * @property \Illuminate\Database\Eloquent\Relations\HasMany $socialProviders
+ * @property Carbon|null $two_factor_confirmed_at
+ * @property HasMany $socialProviders
  */
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -73,6 +76,6 @@ class User extends Authenticatable implements MustVerifyEmail
             $this->two_factor_secret
         );
 
-        return \BaconQrCode\Renderer\Image\SvgImageBackEnd::class;
+        return SvgImageBackEnd::class;
     }
 }

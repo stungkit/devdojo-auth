@@ -20,7 +20,7 @@ test('Two factor challenge page redirects if user is logged in and they don\'t h
 
 test('User logs in when two factor disabled, the login.id session should not be created', function () {
     config()->set('devdojo.auth.settings.enable_2fa', false);
-    $user = createUser(['password' => \Hash::make('password123'), 'two_factor_confirmed_at' => now()]);
+    $user = createUser(['password' => Hash::make('password123'), 'two_factor_confirmed_at' => now()]);
 
     Livewire::test('auth.login')
         ->set('email', $user->email)
@@ -35,7 +35,7 @@ test('User logs in when two factor disabled, the login.id session should not be 
 
 test('User logs in when two factor enabled, the login.id session should be created', function () {
     config()->set('devdojo.auth.settings.enable_2fa', true);
-    $user = createUser(['password' => \Hash::make('password123'), 'two_factor_confirmed_at' => now()]);
+    $user = createUser(['password' => Hash::make('password123'), 'two_factor_confirmed_at' => now()]);
 
     Livewire::test('auth.login')
         ->set('email', $user->email)
@@ -50,7 +50,7 @@ test('User logs in when two factor enabled, the login.id session should be creat
 
 test('User logs in without 2FA, they should not be redirected to auth/two-factor-challenge page', function () {
     config()->set('devdojo.auth.settings.enable_2fa', true);
-    $user = createUser(['password' => \Hash::make('password123')]);
+    $user = createUser(['password' => Hash::make('password123')]);
 
     Livewire::test('auth.login')
         ->set('email', $user->email)

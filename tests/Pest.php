@@ -1,7 +1,7 @@
 <?php
 
 uses(
-    Tests\DuskTestCase::class,
+    DuskTestCase::class,
     // Illuminate\Foundation\Testing\DatabaseMigrations::class,
 )->in('Browser');
 
@@ -16,8 +16,8 @@ uses(
 |
 */
 
-pest()->extend(Tests\TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
     ->in('Feature');
 
 /*
@@ -52,6 +52,9 @@ function something()
 }
 
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\DuskTestCase;
+use Tests\TestCase;
 
 function loginAsUser(?User $user = null, $data = [])
 {
