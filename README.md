@@ -85,6 +85,23 @@ class User extends Devdojo\Auth\Models\User
 }
 ```
 
+## Running the test suite
+
+The tests in this package are designed to run **from inside a consuming Laravel application**, not from the package folder. Set up a host app as described in [CONTRIBUTING.md](CONTRIBUTING.md): require the package via a path repository, then replace the app's `tests/` directory with a symlink to this package's `tests/` folder. From the app root you can then run the Feature suite with `./vendor/bin/pest` and the Browser suite with Laravel Dusk.
+
+Running `./vendor/bin/pest` standalone from this package's root is **expected to fail** with:
+
+```
+Pest\Exceptions\TestCaseClassOrTraitNotFound
+The class `DuskTestCase` was not found.
+```
+
+That's by design, not a broken install:
+
+- The test classes live in the `Tests\` namespace and rely on the host app's `Tests\` → `tests/` autoload mapping. The package's own composer autoload maps `Devdojo\Auth\Tests\` to `tests/`, so `Tests\DuskTestCase` and `Tests\TestCase` never resolve standalone.
+- `Tests\TestCase` extends the framework's application test case, which boots the host app's `bootstrap/app.php` — there is no bootable application inside the package.
+- The `tests/Browser` suite is Laravel Dusk and needs a real running application plus ChromeDriver.
+
 ## License
 
 The DevDojo Auth package is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
