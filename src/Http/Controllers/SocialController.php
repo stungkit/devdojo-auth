@@ -4,6 +4,7 @@ namespace Devdojo\Auth\Http\Controllers;
 
 use Devdojo\Auth\Models\SocialProvider;
 use Devdojo\Auth\Models\SocialProviderUser;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
@@ -59,7 +60,11 @@ class SocialController
 
             Auth::login($providerUser->user);
 
-            return redirect()->to(config('devdojo.auth.settings.redirect_after_auth'));
+            // Honor url.intended — a funnel that parked a destination before
+            // sending the user through OAuth (e.g. a pending build's /launch)
+            // must survive the social round trip, exactly like a password
+            // login would. The configured redirect stays the fallback.
+            return redirect()->intended(config('devdojo.auth.settings.redirect_after_auth'));
         } catch (\Exception $e) {
             return redirect()->route('auth.login')->with('error', 'An error occurred during authentication. Please try again.');
         }
@@ -100,11 +105,19 @@ class SocialController
 
     private function createUser($socialiteUser)
     {
-        return app(config('auth.providers.users.model'))->create([
+        $user = app(config('auth.providers.users.model'))->create([
             'name' => $socialiteUser->getName(),
             'email' => $socialiteUser->getEmail(),
             'email_verified_at' => now(),
         ]);
+
+        // A social signup IS a registration — fire the framework event so
+        // Registered listeners (welcome emails, funnel persistence) run for
+        // this path too. The verification listener no-ops: the account is
+        // created pre-verified above.
+        event(new Registered($user));
+
+        return $user;
     }
 
     private function createSocialProviderUser($user, $socialiteUser, $driver)
